@@ -1,0 +1,25 @@
+{
+  "id": "opends-sync",
+  "name": "OpenDS Sync",
+  "description": "Sync your Penpot design system to OpenDS platform",
+  "version": "0.1.0",
+  "author": "OpenDS Team",
+  "icon": "🔄",
+  "entry": "dist/minimal-plugin.js",
+  "permissions": [
+    "storage",
+    "library.local",
+    "file.current"
+  ],
+  "ui": {
+    "panels": [
+      {
+        "id": "opends-panel",
+        "name": "OpenDS",
+        "icon": "🔄",
+        "html": "<div id='opends-root'></div>",
+        "css": "dist/styles.css"
+      }
+    ]
+  }
+}

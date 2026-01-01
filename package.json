@@ -1,0 +1,48 @@
+{
+  "name": "opends-penpot-plugin",
+  "version": "0.1.0",
+  "description": "Penpot plugin for syncing design systems to OpenDS platform",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepack": "pnpm run build",
+    "serve": "node serve-plugin.js"
+  },
+  "keywords": [
+    "penpot",
+    "plugin",
+    "design-system",
+    "sync",
+    "opends"
+  ],
+  "author": "OpenDS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opends/opends-penpot-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/opends/opends-penpot-plugin/issues"
+  },
+  "homepage": "https://opends.dev",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@penpot/plugin-types": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "penpot": {
+    "id": "opends-sync",
+    "name": "OpenDS Sync",
+    "description": "Sync your Penpot design system to OpenDS platform",
+    "icon": "🔄",
+    "main": "dist/index.js"
+  }
+}

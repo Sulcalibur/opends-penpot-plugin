@@ -1,0 +1,11 @@
+{
+  "name": "OpenDS Sync",
+  "description": "Sync your Penpot design system to OpenDS platform",
+  "code": "/plugin.js",
+  "icon": "/icon.png",
+  "permissions": [
+    "content:read",
+    "library:read",
+    "allow:localstorage"
+  ]
+}
