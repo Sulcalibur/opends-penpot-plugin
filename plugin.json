@@ -1,25 +1,60 @@
 {
   "id": "opends-sync",
   "name": "OpenDS Sync",
-  "description": "Sync your Penpot design system to OpenDS platform",
+  "description": "Sync your Penpot design system to OpenDS platform. Extract and sync design tokens, components, and assets.",
   "version": "0.1.0",
-  "author": "OpenDS Team",
   "icon": "🔄",
-  "entry": "dist/minimal-plugin.js",
+  "main": "dist/main-plugin.js",
   "permissions": [
-    "storage",
+    "storage.local",
     "library.local",
+    "library.remote",
     "file.current"
   ],
-  "ui": {
-    "panels": [
-      {
-        "id": "opends-panel",
-        "name": "OpenDS",
-        "icon": "🔄",
-        "html": "<div id='opends-root'></div>",
-        "css": "dist/styles.css"
-      }
-    ]
+  "features": [
+    {
+      "name": "Design Token Sync",
+      "description": "Extract and sync colors, typography, and spacing tokens to OpenSpec YAML format"
+    },
+    {
+      "name": "Component Export",
+      "description": "Export components with CSS, SVG, and HTML code"
+    },
+    {
+      "name": "Proposal Trigger",
+      "description": "Create documentation proposals from Penpot"
+    },
+    {
+      "name": "Sync Status",
+      "description": "Monitor sync status between Penpot and OpenDS hub"
+    },
+    {
+      "name": "Metadata Tagging",
+      "description": "Add status, tags, and categories to components"
+    },
+    {
+      "name": "Asset Management",
+      "description": "Extract and manage SVG assets"
+    }
+  ],
+  "author": {
+    "name": "OpenDS Team",
+    "url": "https://opends.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opends/opends-penpot-plugin"
+  },
+  "keywords": [
+    "penpot",
+    "plugin",
+    "design-system",
+    "sync",
+    "opends",
+    "tokens",
+    "components"
+  ],
+  "engines": {
+    "penpot": ">=1.18.0"
   }
 }

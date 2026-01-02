@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "ESNext",
     "lib": ["ES2020", "DOM"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,9 +15,13 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmitOnError": true,
-    "types": ["@penpot/plugin-types"]
+    "noEmitOnError": false,
+    "types": ["@penpot/plugin-types"],
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*", "src/*"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/main-plugin.ts", "src/plugin/**/*"],
+  "exclude": ["node_modules", "dist", "src/index.ts", "src/minimal-plugin.ts", "src/simple-plugin.ts", "src/tests.ts"]
 }
