@@ -11,6 +11,17 @@ A Penpot plugin for syncing design systems to the OpenDS platform. This plugin e
 - **Error Handling**: Robust error handling with retry logic and connection timeouts
 - **Secure Storage**: API keys stored locally in Penpot
 
+## 📚 Showcase Documentation
+
+**New!** Comprehensive research on building HTML showcase pages for your design tokens:
+
+- **[Quick Start Guide](./QUICK-START-SHOWCASE.md)** - Build a showcase page in 30 minutes
+- **[Full Research](./SHOWCASE-RESEARCH.md)** - Deep dive into all approaches (Plugin→Site, Storybook, CLI tools, etc.)
+- **[Approach Comparison](./APPROACH-COMPARISON.md)** - Decision matrix and feature comparison
+- **[Research Summary](./RESEARCH-SUMMARY.md)** - Executive overview of findings
+
+These guides show you how to create a beautiful HTML page to display your Penpot design tokens (colors, typography, spacing) and components (SVGs) for documentation and team collaboration.
+
 ## Installation
 
 ### From Penpot Plugin Store (Recommended)
