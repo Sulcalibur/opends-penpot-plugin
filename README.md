@@ -96,6 +96,43 @@ These guides show you how to create a beautiful HTML page to display your Penpot
 3. **Sync Data**: Click "Sync to OpenDS" to send your design system data
 4. **Monitor Progress**: Watch the status messages for sync progress
 
+### Auto-sync (zero-click watch mode)
+
+While the OpenDS panel is open, the plugin keeps your hub in step with the
+file automatically:
+
+- **Sync on open** — connecting, or reopening the plugin with a saved
+  connection, pushes the current token library once.
+- **Watch loop** — every few seconds the plugin fingerprints the token
+  library (`penpot.library.local` → colors, typography, spacing). When the
+  fingerprint changes (a color, type style, or spacing was edited, added, or
+  renamed), it waits ~2s for edits to settle, then pushes the changes — no
+  clicking.
+- **No change = no push** — the fingerprint is derived from the normalized,
+  sorted payload fields, so reordering tokens or editing descriptions never
+  triggers a sync, and reopening an unchanged file is a no-op.
+- **Pause anytime** — untick "Auto-sync on change" in the Sync tab.
+
+### Choosing what to sync
+
+The Sync tab lets you pick the sync scope (persisted per connection):
+
+- **Everything** — tokens + all design-system components
+- **All tokens** — colors, typography, and spacing only
+- **All components** — the file's library main components
+- **Choose components…** — a checkbox picker over the file's library
+  components
+
+The watch loop only reacts to changes inside the selected scope: editing a
+token while in a components-only scope, or renaming a component you didn't
+select in "Choose components…", never triggers a push. Components land in
+OpenDS with `status: review` and a `source: "penpot"` spec.
+
+> Penpot's plugin API exposes no library-change event (plugins only run while
+> launched, and events are limited to selection/page/file/theme changes), so
+> change detection is polling-based while the panel is open. True background
+> sync with the plugin closed is not possible on hosted Penpot.
+
 ### Component Extraction Details
 
 The plugin extracts the following from Penpot components:
@@ -138,11 +175,12 @@ pnpm run dev
 
 ### Testing
 
-The plugin includes test utilities in `src/tests.ts`. To run tests:
+The pure logic (token fingerprinting, normalization, payload building) lives
+between the `OPENDSCORE-START`/`OPENDSCORE-END` markers in `public/plugin.js`
+and is covered by zero-dependency tests that extract that exact block:
 
 ```bash
-# Run tests (requires test runner setup)
-pnpm test
+pnpm test          # node --test tests/
 ```
 
 ### Contributing
@@ -155,11 +193,12 @@ pnpm test
 
 ## API Endpoints
 
-The plugin communicates with OpenDS backend:
+The plugin communicates with OpenDS backend (Bearer API key):
 
-- `GET /api/plugin/health` - Health check
-- `POST /api/plugin/sync` - Sync design system data
-- `POST /api/plugin/api-keys` - Generate API keys
+- `GET  /api/plugin/health` — connection test
+- `POST /api/penpot/tokens` — push token payload (`{version, source, exportedAt, colors, typography, spacing}`)
+- `POST /api/penpot/components` — push components (`{version, source, exportedAt, components: [{name, …}]}`)
+- `GET  /api/penpot/sync-status` — sync stats
 
 ## Permissions
 

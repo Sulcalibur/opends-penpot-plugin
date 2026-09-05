@@ -11,7 +11,8 @@
     "clean": "rm -rf dist",
     "prepack": "pnpm run build",
     "serve": "node serve-plugin.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --test tests/logic.test.mjs"
   },
   "keywords": [
     "penpot",

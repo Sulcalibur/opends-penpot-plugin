@@ -25,6 +25,9 @@ npm run lint
 
 # Serve the plugin UI locally (for testing in Penpot)
 npm run serve
+
+# Unit tests over the pure logic in public/plugin.js (node --test, zero deps)
+npm test
 ```
 
 ## Architecture
@@ -56,7 +59,19 @@ index.html (iframe)                plugin.js (plugin context)
       │     result: {...} }                │
 ```
 
-Supported message types: `test-connection`, `load-config`, `extract-tokens`, `sync-tokens`, `disconnect`.
+Supported message types: `test-connection`, `load-config`, `extract-tokens`, `sync-tokens`, `set-auto-sync`, `set-sync-scope`, `list-components`, `sync-now`, `disconnect`. Plugin→UI status flows through `sync-status` (`watch-on | watch-off | syncing | synced | no-change | error`), `scope-updated`, `components-listed`, `component-sync-success`, and the existing `connection-*`, `sync-success`, `sync-error`, `tokens-extracted`, `themechange` messages.
+
+### Auto-sync
+
+While the panel is open the plugin syncs once on open/connect, then polls
+`penpot.library.local` (~4s), fingerprints the **selected sync scope**, and
+debounce-pushes (~2s) on change. Scope options: `all` (tokens + components),
+`tokens`, `components`, or `pick` (checkbox selection of library components).
+Fingerprints cover only payload fields (names + values, sorted), so reorders
+or description edits never trigger a push — and an edit to an unselected
+component is ignored entirely. Pure logic sits between
+`OPENDSCORE-START`/`OPENDSCORE-END` markers in `public/plugin.js`; `npm test`
+unit-tests that exact block (zero deps).
 
 ### Source structure
 
@@ -99,6 +114,7 @@ The plugin talks to three endpoints on the OpenDS app:
 |----------|---------|------|
 | `GET  /api/plugin/health` | Connection test | `Bearer <apiKey>` |
 | `POST /api/penpot/tokens` | Push token payload (colors, typography, spacing) → persists to `design_tokens` table | `Bearer <apiKey>` |
+| `POST /api/penpot/components` | Push components (library main components) → created via the component repository, status `review`, deduped by slugified name | `Bearer <apiKey>` |
 | `GET  /api/penpot/sync-status` | Fetch sync stats | `Bearer <apiKey>` |
 
 Token payload shape (POST body):

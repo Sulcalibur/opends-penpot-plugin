@@ -197,17 +197,46 @@
       </div>
 
       <div class="card">
+        <p style="font-weight: 600; margin: 0 0 8px 0; color: #374151;">What to sync</p>
+
+        <label style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;font-size:13px;color:#374151;">
+          <input type="radio" name="sync-scope" value="all" checked> Everything
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;font-size:13px;color:#374151;">
+          <input type="radio" name="sync-scope" value="tokens"> All tokens (colors, type, spacing)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;font-size:13px;color:#374151;">
+          <input type="radio" name="sync-scope" value="components"> All components
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;font-size:13px;color:#374151;">
+          <input type="radio" name="sync-scope" value="pick"> Choose components…
+        </label>
+
+        <div id="component-scope" style="display:none;margin:8px 0 0 0;max-height:150px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;padding:6px;">
+          <p id="component-scope-note" style="font-size:11px;color:#9ca3af;margin:0 0 4px 0;">Loading components…</p>
+          <div id="component-list"></div>
+        </div>
+      </div>
+
+      <div class="card">
         <p style="margin: 0 0 12px 0; color: #6b7280;">
-          Sync colors, typography, and spacing tokens to your OpenDS hub.
+          Sync design tokens and design-system components to your OpenDS hub.
         </p>
-        <button class="primary-button" id="sync-btn">Sync Tokens</button>
+
+        <label class="auto-sync-row" style="display:flex;align-items:center;gap:8px;margin:0 0 12px 0;cursor:pointer;">
+          <input type="checkbox" id="auto-sync-toggle" checked>
+          <span style="font-size:13px;color:#374151;">Auto-sync on change (while this panel is open)</span>
+        </label>
+        <div id="auto-sync-status" class="status" style="display:none;margin:0 0 12px 0;"></div>
+
+        <button class="primary-button" id="sync-btn">Sync Now</button>
         <div id="sync-status" class="status"></div>
       </div>
 
       <div class="card">
         <p style="font-weight: 600; margin: 0 0 10px 0; color: #374151;">Preview</p>
         <div class="token-preview" id="token-preview">
-          <p style="color: #9ca3af;">Click <strong>Sync Tokens</strong> to extract and preview</p>
+          <p style="color: #9ca3af;">Click <strong>Sync Now</strong> to extract and preview</p>
         </div>
       </div>
     </div>
@@ -245,6 +274,9 @@
 // ════════════════ State ════════════════
 var config = null;
 var extractedTokens = null;
+var syncScopeMode = 'all';           // all | tokens | components | pick
+var libraryComponents = [];          // fetched from plugin for the picker
+var selectedComponentIds = {};       // id → true for pick mode
 
 // ════════════════ Plugin Communication ════════════════
 function sendToPlugin(msg) {
@@ -259,6 +291,14 @@ window.addEventListener('message', function (event) {
     case 'config-loaded':
       config = msg.config;
       if (config && config.connected) {
+        document.getElementById('auto-sync-toggle').checked = config.autoSync !== false;
+        syncScopeMode = (config.scope && config.scope.mode) || 'all';
+        selectedComponentIds = {};
+        (config.scope && config.scope.componentIds || []).forEach(function (id) { selectedComponentIds[id] = true; });
+        renderScopeControls();
+        if (syncScopeMode === 'pick') {
+          requestComponentList();
+        }
         showMainView();
       } else {
         showWelcomeView();
@@ -267,6 +307,23 @@ window.addEventListener('message', function (event) {
           document.getElementById('api-key').value = config.apiKey || '';
         }
       }
+      break;
+
+    case 'components-listed':
+      renderComponentPicker(msg.components || []);
+      break;
+
+    case 'list-error':
+      showSyncStatus('Could not list components: ' + msg.error, 'error');
+      break;
+
+    case 'scope-updated':
+      syncScopeMode = msg.scope.mode;
+      renderScopeControls();
+      break;
+
+    case 'sync-status':
+      renderAutoSyncStatus(msg);
       break;
 
     case 'connection-success':
@@ -292,7 +349,7 @@ window.addEventListener('message', function (event) {
       showSyncStatus('Extraction failed: ' + msg.error, 'error');
       var sbtn = document.getElementById('sync-btn');
       sbtn.disabled = false;
-      sbtn.textContent = 'Sync Tokens';
+      sbtn.textContent = 'Sync Now';
       break;
 
     case 'sync-success':
@@ -303,14 +360,14 @@ window.addEventListener('message', function (event) {
       );
       var sbtn2 = document.getElementById('sync-btn');
       sbtn2.disabled = false;
-      sbtn2.textContent = 'Sync Tokens';
+      sbtn2.textContent = 'Sync Now';
       break;
 
     case 'sync-error':
       showSyncStatus('Sync failed: ' + msg.error, 'error');
       var sbtn3 = document.getElementById('sync-btn');
       sbtn3.disabled = false;
-      sbtn3.textContent = 'Sync Tokens';
+      sbtn3.textContent = 'Sync Now';
       break;
 
     case 'disconnected':
@@ -346,6 +403,135 @@ function showSyncStatus(message, type) {
   var el = document.getElementById('sync-status');
   el.textContent = message;
   el.className = 'status ' + type;
+}
+
+// Auto-sync status pill — mirrors the plugin's watch loop.
+function renderAutoSyncStatus(msg) {
+  var el = document.getElementById('auto-sync-status');
+  var text = '';
+  var type = 'info';
+
+  switch (msg.state) {
+    case 'watch-on':
+      text = 'Auto-sync on — watching this file for token changes';
+      type = 'info';
+      break;
+    case 'watch-off':
+      text = 'Auto-sync paused';
+      type = 'info';
+      break;
+    case 'syncing':
+      text = 'Auto-syncing tokens\u2026';
+      type = 'info';
+      break;
+    case 'synced': {
+      var counts = msg.counts || {};
+      var tc = counts.tokens || null;
+      var cc = counts.components || null;
+      var parts = [];
+      if (tc) {
+        parts.push('tokens ' + tc.synced + ' synced' + (tc.failed ? ' · ' + tc.failed + ' failed' : ''));
+      }
+      if (cc) {
+        parts.push('components ' + cc.synced + ' synced' + (cc.failed ? ' · ' + cc.failed + ' failed' : ''));
+      }
+      if (parts.length) {
+        text = 'Auto-synced: ' + parts.join(' · ');
+      } else {
+        text = 'Auto-sync complete (all up to date)';
+      }
+      type = 'success';
+      break;
+    }
+    case 'no-change':
+      text = 'Up to date — no token changes since last sync';
+      type = 'success';
+      break;
+    case 'error':
+      text = 'Auto-sync error: ' + (msg.error || 'unknown error');
+      type = 'error';
+      break;
+    default:
+      el.style.display = 'none';
+      return;
+  }
+
+  el.textContent = text;
+  el.className = 'status ' + type;
+  el.style.display = 'block';
+}
+
+// ════════════════ Sync Scope ════════════════
+function renderScopeControls() {
+  var radios = document.querySelectorAll('input[name="sync-scope"]');
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].checked = radios[i].value === syncScopeMode;
+  }
+  var picker = document.getElementById('component-scope');
+  picker.style.display = syncScopeMode === 'pick' ? '' : 'none';
+  if (syncScopeMode === 'pick' && libraryComponents.length === 0) {
+    requestComponentList();
+  }
+}
+
+function requestComponentList() {
+  document.getElementById('component-list').innerHTML = '';
+  sendToPlugin({ type: 'list-components' });
+}
+
+function renderComponentPicker(components) {
+  libraryComponents = components;
+  var note = document.getElementById('component-scope-note');
+  var list = document.getElementById('component-list');
+
+  if (!components || components.length === 0) {
+    note.textContent = 'No design-system components found in this file';
+    list.innerHTML = '';
+    return;
+  }
+
+  note.textContent = components.length + ' component' + (components.length === 1 ? '' : 's') + ' in this file — pick what to sync:';
+  var html = '';
+  components.forEach(function (c) {
+    var checked = selectedComponentIds[c.id] ? ' checked' : '';
+    html += '<label style="display:flex;align-items:center;gap:6px;padding:3px 2px;font-size:12px;color:#374151;cursor:pointer;">' +
+      '<input type="checkbox" class="component-check" value="' + c.id + '"' + checked + '>' +
+      '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.name + '</span>' +
+    '</label>';
+  });
+  list.innerHTML = html;
+}
+
+function currentScopeMode() {
+  var radios = document.querySelectorAll('input[name="sync-scope"]');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) return radios[i].value;
+  }
+  return 'all';
+}
+
+function collectCheckedComponentIds() {
+  var ids = [];
+  document.querySelectorAll('.component-check:checked').forEach(function (el) {
+    ids.push(el.value);
+  });
+  return ids;
+}
+
+function announceScope() {
+  var mode = currentScopeMode();
+  syncScopeMode = mode;
+
+  var componentIds = [];
+  if (mode === 'pick') {
+    componentIds = collectCheckedComponentIds();
+    document.getElementById('component-scope').style.display = '';
+    if (libraryComponents.length === 0) requestComponentList();
+  } else {
+    document.getElementById('component-scope').style.display = 'none';
+  }
+
+  sendToPlugin({ type: 'set-sync-scope', mode: mode, componentIds: componentIds });
 }
 
 // ════════════════ Token Preview ════════════════
@@ -406,44 +592,38 @@ document.getElementById('connect-btn').addEventListener('click', function () {
 });
 
 // ════════════════ Sync Button ════════════════
+document.getElementById('auto-sync-toggle').addEventListener('change', function () {
+  sendToPlugin({ type: 'set-auto-sync', enabled: this.checked });
+});
+
 document.getElementById('sync-btn').addEventListener('click', function () {
   var btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  showSyncStatus('Syncing selected scope to OpenDS...', 'info');
+  sendToPlugin({ type: 'sync-now' });
+  // Re-enable once the plugin reports the outcome
+  var handler = function (event) {
+    var msg = event.data;
+    if (msg && msg.source === 'plugin' && (msg.type === 'sync-status' || msg.type === 'sync-error')) {
+      if (msg.type === 'sync-status' && msg.state === 'syncing') return; // keep disabled while syncing
+      window.removeEventListener('message', handler);
+      btn.disabled = false;
+      btn.textContent = 'Sync Now';
+    }
+  };
+  window.addEventListener('message', handler);
+});
 
-  if (extractedTokens) {
-    // Already extracted — sync directly
-    btn.disabled = true;
-    btn.textContent = 'Syncing...';
-    showSyncStatus('Pushing tokens to OpenDS...', 'info');
-    sendToPlugin({ type: 'sync-tokens', url: config.url, apiKey: config.apiKey, tokens: extractedTokens });
-  } else {
-    // Extract first
-    btn.disabled = true;
-    btn.textContent = 'Extracting...';
-    showSyncStatus('Reading tokens from Penpot...', 'info');
-    sendToPlugin({ type: 'extract-tokens' });
+// Scope radio buttons → announce new scope
+document.querySelectorAll('input[name="sync-scope"]').forEach(function (radio) {
+  radio.addEventListener('change', function () { announceScope(); });
+});
 
-    // The extract response handler will update the button to say "Sync to Hub"
-    // and on the next click, this branch won't be taken
-    var origClick = this.onclick;
-    var self = this;
-    extractedTokens = null; // reset — will be set by extract response
-
-    // Listen for extract completion, then auto-trigger sync
-    var handler = function (event) {
-      var msg = event.data;
-      if (msg && msg.source === 'plugin' && msg.type === 'tokens-extracted') {
-        window.removeEventListener('message', handler);
-        btn.textContent = 'Syncing...';
-        showSyncStatus('Pushing tokens to OpenDS...', 'info');
-        sendToPlugin({ type: 'sync-tokens', url: config.url, apiKey: config.apiKey, tokens: msg.tokens });
-      }
-      if (msg && msg.source === 'plugin' && msg.type === 'extract-error') {
-        window.removeEventListener('message', handler);
-        btn.disabled = false;
-        btn.textContent = 'Sync Tokens';
-      }
-    };
-    window.addEventListener('message', handler);
+// Component picker checkboxes (pick mode) → announce new selection
+document.getElementById('component-list').addEventListener('change', function (event) {
+  if (event.target && event.target.classList.contains('component-check')) {
+    if (syncScopeMode === 'pick') announceScope();
   }
 });
 
