@@ -25,10 +25,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/opends/opends-penpot-plugin"
+    "url": "https://github.com/Sulcalibur/opends-penpot-plugin.git"
   },
   "bugs": {
-    "url": "https://github.com/opends/opends-penpot-plugin/issues"
+    "url": "https://github.com/Sulcalibur/opends-penpot-plugin/issues"
   },
   "homepage": "https://opends.dev",
   "engines": {
@@ -45,8 +45,8 @@
   "penpot": {
     "id": "opends-sync",
     "name": "OpenDS Sync",
-    "description": "Sync your Penpot design system to OpenDS platform",
+    "description": "Push Penpot tokens and components to a self-hosted OpenDS instance",
     "icon": "🔄",
-    "main": "dist/index.js"
+    "main": "public/plugin.js"
   }
 }

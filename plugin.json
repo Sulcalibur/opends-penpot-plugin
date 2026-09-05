@@ -1,40 +1,30 @@
 {
-  "id": "opends-sync",
   "name": "OpenDS Sync",
-  "description": "Sync your Penpot design system to OpenDS platform. Extract and sync design tokens, components, and assets.",
+  "description": "Push your Penpot library — design tokens and components — to a self-hosted OpenDS instance. Connect with an instance URL and API key, then sync automatically while the panel is open, or pick exactly what to sync.",
   "version": "0.1.0",
   "icon": "🔄",
-  "main": "dist/main-plugin.js",
+  "main": "public/plugin.js",
   "permissions": [
-    "storage.local",
-    "library.local",
-    "library.remote",
-    "file.current"
+    "content:read",
+    "library:read",
+    "allow:localstorage"
   ],
   "features": [
     {
-      "name": "Design Token Sync",
-      "description": "Extract and sync colors, typography, and spacing tokens to OpenSpec YAML format"
+      "name": "Design token sync",
+      "description": "Extract and push colors, typography and spacing tokens to your OpenDS instance"
     },
     {
-      "name": "Component Export",
-      "description": "Export components with CSS, SVG, and HTML code"
+      "name": "Component sync",
+      "description": "Push library components to OpenDS as review-pending components, deduplicated by name"
     },
     {
-      "name": "Proposal Trigger",
-      "description": "Create documentation proposals from Penpot"
+      "name": "Auto-sync while open",
+      "description": "Syncs once on open/connect and watches the library for changes, pushing automatically"
     },
     {
-      "name": "Sync Status",
-      "description": "Monitor sync status between Penpot and OpenDS hub"
-    },
-    {
-      "name": "Metadata Tagging",
-      "description": "Add status, tags, and categories to components"
-    },
-    {
-      "name": "Asset Management",
-      "description": "Extract and manage SVG assets"
+      "name": "Choose what to sync",
+      "description": "Sync everything, only tokens, only components, or a hand-picked set of components"
     }
   ],
   "author": {
@@ -43,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/opends/opends-penpot-plugin"
+    "url": "https://github.com/Sulcalibur/opends-penpot-plugin.git"
   },
   "keywords": [
     "penpot",
@@ -53,8 +43,5 @@
     "opends",
     "tokens",
     "components"
-  ],
-  "engines": {
-    "penpot": ">=1.18.0"
-  }
+  ]
 }
